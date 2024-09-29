@@ -11,7 +11,7 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     max_seq_length=max_seq_length,
     dtype=dtype,
     load_in_4bit=load_in_4bit,
-    cache_dir="D:\\archive\\projects\\1\\llamasama\\models"  # Change download location here
+    cache_dir="\Model\"  # Change download location here
 )
 
 tokenizer = get_chat_template(
