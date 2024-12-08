@@ -34,13 +34,13 @@ def trim_to_full_sentences(text):
 
 
 # Function to call Ollama and generate text
-def generate_response(history, model_name="innosama",stream = False):
+def generate_response(history, model_name="innosama", stream=False):
     response = ollama.chat(
         model=model_name,
         messages=history,
         stream=stream
     )
-    #print("generated", response)
+    # print("generated", response)
     resp = ""
     if stream == True:
         for chunk in response:
@@ -51,25 +51,26 @@ def generate_response(history, model_name="innosama",stream = False):
         return response['message']['content']
 
 
-
-
-def get_response(prompt,model_name="innosama",cut = True,stream = False):
+def get_response(prompt, model_name="innosama", cut=True, stream=False):
     global conversation_history
     conversation_history.append({'role': 'user', 'content': prompt})
-    response = generate_response(conversation_history,model_name)
-    #print("get response", response)
+    response = generate_response(conversation_history, model_name)
+    # print("get response", response)
     if cut == True:
         response = trim_to_full_sentences(response)
     conversation_history.append({'role': 'assistant', 'content': response})
     return response
 
+
 def split_into_sentences(text):
     return re.split(r'(?<=[.!?])\s+', text)
+
 
 def continue_gen():
     global conversation_history
     response = generate_response(conversation_history, model_name)
     conversation_history[-1]["content"] += " " + trim_to_full_sentences(response)
+
 
 def response2audio(response):
     global tts
@@ -97,6 +98,7 @@ def response2audio(response):
     # Export the final concatenated audio
     final_audio.export("final_output.wav", format="wav")
 
+
 def response2audioV2(response):
     global tts
     response = response.replace("«", "").replace("»", "")
@@ -108,7 +110,7 @@ def response2audioV2(response):
 
 
 def get_sudden_response():
-    r = random.randint(1,10)
+    r = random.randint(1, 10)
     if r <= 5:
         conversation_history.append({'role': 'SYSTEM', 'content': "say something random to continue topic"})
     else:
@@ -140,7 +142,7 @@ if __name__ == "__main__":
     data = ""
     last_received_time = time.time()
     timeout_thread = threading.Thread(target=monitor_timeout, daemon=True)
-    #timeout_thread.start()
+    # timeout_thread.start()
 
     while True:
         try:
@@ -183,4 +185,3 @@ if __name__ == "__main__":
                 client_socket.close()
             except NameError:
                 pass
-
