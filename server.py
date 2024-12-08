@@ -9,6 +9,8 @@ import random
 import time
 import threading
 
+"""Server file"""
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -149,7 +151,8 @@ if __name__ == "__main__":
                 try:
 
                     data = client_socket.recv(1024).decode('utf-8')
-
+                    if len(data) == 0:
+                        continue
                     print(f"Receiving data: {data}")
                     if data == "bye":
                         print(f"Client {addr} ended the session.")
