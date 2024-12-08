@@ -120,7 +120,7 @@ def get_sudden_response():
 
 def monitor_timeout():
     while True:
-        if time.time() - last_received_time > 15:
+        if time.time() - last_received_time > 35:
             get_sudden_response()
             time.sleep(15)  # Avoid repeated triggers during the wait
         time.sleep(1)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     data = ""
     last_received_time = time.time()
     timeout_thread = threading.Thread(target=monitor_timeout, daemon=True)
-    # timeout_thread.start()
+    timeout_thread.start()
 
     while True:
         try:
@@ -159,9 +159,9 @@ if __name__ == "__main__":
                     if data == "bye":
                         print(f"Client {addr} ended the session.")
                         break
-
-                    response = get_response(data, model_name)
                     last_received_time = time.time()
+                    response = get_response(data, model_name)
+
                     response2audio(response)
 
                     with open("final_output.wav", "rb") as f:
