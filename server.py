@@ -5,6 +5,9 @@ import socket
 import torch
 from TTS.api import TTS
 from pydub import AudioSegment
+import random
+import time
+import threading
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -71,7 +74,7 @@ def response2audio(response):
     audio_files = []
     for i, sentence in enumerate(sentences):
         file_path = f"sentence_{i}.wav"
-        tts.tts_to_file(text=sentence, speaker_wav="sent_000.wav", language="en", file_path=file_path, speed=1.2)
+        tts.tts_to_file(text=sentence, speaker_wav="sam.wav", language="en", file_path=file_path, speed=1.2)
         audio_files.append(file_path)
     final_audio = AudioSegment.silent(duration=0)  # start with empty audio
     silence_between = 0  # 500ms of silence between sentences
@@ -90,6 +93,32 @@ def response2audio(response):
     # Export the final concatenated audio
     final_audio.export("final_output.wav", format="wav")
 
+def response2audioV2(response):
+    global tts
+    response = response.replace("«", "").replace("»", "")
+    tts.tts_to_file(
+        text=response,
+        file_path="final_output.wav",
+        speaker_wav="sam.wav",
+        language="en")
+
+
+def get_sudden_response():
+    r = random.randint(1,10)
+    if r <= 5:
+        conversation_history.append({'role': 'SYSTEM', 'content': "say something random to continue topic"})
+    else:
+        conversation_history.append({'role': 'SYSTEM', 'content': "say something random to change topic"})
+    return get_response(data, model_name)
+
+
+def monitor_timeout():
+    while True:
+        if time.time() - last_received_time > 15:
+            get_sudden_response()
+            time.sleep(15)  # Avoid repeated triggers during the wait
+        time.sleep(1)
+
 
 # Example usage
 if __name__ == "__main__":
@@ -107,17 +136,27 @@ if __name__ == "__main__":
     print(f"Подключен: {addr}")
 
     data = ""
-    while data != "bye":
-        data = client_socket.recv(1024).decode('utf-8')
-        print(f"Полученные данные: {data}")
-        response = get_response(data,model_name)
+    last_received_time = time.time()
+    timeout_thread = threading.Thread(target=monitor_timeout, daemon=True)
+    timeout_thread.start()
 
-        response2audio(response)
+    try:
+        while data != "bye":
+            data = client_socket.recv(1024).decode('utf-8')
+            if data:
+                last_received_time = time.time()  # Reset the timer
+                print(f"Received data: {data}")
+                response = get_response(data, model_name)
+                response2audio(response)
 
-        with open("final_output.wav", "rb") as f:
-            audio_data = f.read()
-            client_socket.sendall(audio_data)
+                with open("final_output.wav", "rb") as f:
+                    audio_data = f.read()
+                    client_socket.sendall(audio_data)
 
-        print(f"Отправленные данные: {response}")
-    client_socket.close()
-    server_socket.close()
+                print(f"Sent response: {response}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
+        server_socket.close()
+        print("Connection closed.")
