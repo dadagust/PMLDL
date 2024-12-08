@@ -1,14 +1,17 @@
 import os
+import time
+import pygame
+
 import pyaudio
 import json
 from vosk import Model, KaldiRecognizer
 import socket
 from playsound import playsound
-
+pygame.mixer.init()
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('10.10.10.129', 12345))
+client_socket.connect(('10.241.1.26', 12345))
 
-English = False
+English = True
 
 model_path = "vosk-model-en-us-0.42-gigaspeech" if English else "vosk-model-ru-0.42"
 
@@ -32,18 +35,33 @@ rec = KaldiRecognizer(model, RATE)
 is_waiting_for_response = False
 
 try:
-    print(f"You can speak now")
+    print("You can speak now")
     input()
+
     while True:
         if is_waiting_for_response:
-            response = client_socket.recv(1024)
-            print(f"Server response: {response}")
-            with open("response.wav", "wb") as file:
-                file.write(response.content)
-            playsound("audio_file.wav")
+            response = client_socket.recv(40000000)
+            if not response:
+                print("No response from server. Closing connection.")
+                break
+
+            with open(f"response.wav", "wb") as file:
+                file.write(response)
+            print("writed audio")
+
+            pygame.mixer.music.load(f"response.wav")
+            pygame.mixer.music.play()
+
+            while pygame.mixer.music.get_busy():
+                time.sleep(0.1)
+
+            pygame.mixer.music.unload()
+            os.remove(f"response.wav")
             is_waiting_for_response = False
-            print(f"You can speak now")
+            print("You can speak now")
             input()
+
+
         else:
             data = stream.read(CHUNK)
             if len(data) == 0:
@@ -55,6 +73,7 @@ try:
                 client_socket.send(text.encode('utf-8'))
                 print(f"Resolved text: {text}")
                 is_waiting_for_response = True
+
             data = None
 
 except KeyboardInterrupt:

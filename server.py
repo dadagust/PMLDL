@@ -32,12 +32,13 @@ def trim_to_full_sentences(text):
 
 
 # Function to call Ollama and generate text
-def generate_response(history, model_name,stream = False):
+def generate_response(history, model_name="innosama",stream = False):
     response = ollama.chat(
         model=model_name,
         messages=history,
         stream=stream
     )
+    #print("generated", response)
     resp = ""
     if stream == True:
         for chunk in response:
@@ -50,10 +51,11 @@ def generate_response(history, model_name,stream = False):
 
 
 
-def get_response(prompt,model_name,cut = True,stream = False):
+def get_response(prompt,model_name="innosama",cut = True,stream = False):
     global conversation_history
     conversation_history.append({'role': 'user', 'content': prompt})
     response = generate_response(conversation_history,model_name)
+    #print("get response", response)
     if cut == True:
         response = trim_to_full_sentences(response)
     conversation_history.append({'role': 'assistant', 'content': response})
@@ -122,41 +124,60 @@ def monitor_timeout():
 
 # Example usage
 if __name__ == "__main__":
-    model_name = "example"
-
+    model_name = "innosama"
+    HOST = '0.0.0.0'
+    PORT = 12345
     conversation_history = []
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', 12345))  # Замените на IP адрес и порт сервера
+    server_socket.bind((HOST, PORT))
     server_socket.listen(1)
-
-    print("Сервер запущен, ожидаю подключения...")
-    client_socket, addr = server_socket.accept()
-    print(f"Подключен: {addr}")
+    print(f"Server Launched on {HOST}:{PORT}, awaiting connections...")
 
     data = ""
     last_received_time = time.time()
     timeout_thread = threading.Thread(target=monitor_timeout, daemon=True)
-    timeout_thread.start()
+    #timeout_thread.start()
 
-    try:
-        while data != "bye":
-            data = client_socket.recv(1024).decode('utf-8')
-            if data:
-                last_received_time = time.time()  # Reset the timer
-                print(f"Received data: {data}")
-                response = get_response(data, model_name)
-                response2audio(response)
+    while True:
+        try:
+            client_socket, addr = server_socket.accept()
+            print(f"Connected: {addr}")
 
-                with open("final_output.wav", "rb") as f:
-                    audio_data = f.read()
-                    client_socket.sendall(audio_data)
+            while True:
+                try:
 
-                print(f"Sent response: {response}")
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        client_socket.close()
-        server_socket.close()
-        print("Connection closed.")
+                    data = client_socket.recv(1024).decode('utf-8')
+
+                    print(f"Receiving data: {data}")
+                    if data == "bye":
+                        print(f"Client {addr} ended the session.")
+                        break
+
+                    response = get_response(data, model_name)
+                    last_received_time = time.time()
+                    response2audio(response)
+
+                    with open("final_output.wav", "rb") as f:
+                        audio_data = f.read()
+                        client_socket.sendall(audio_data)
+
+                    print(f"Sent response: {response}")
+                except ConnectionResetError:
+                    print(f"Client {addr} forcibly closed the connection.")
+                    conversation_history = []
+                    break
+                except Exception as e:
+                    print(f"Error handling client {addr}: {e}")
+                    conversation_history = []
+                    break
+
+        except Exception as e:
+            print(f"Error accepting connection: {e}")
+        finally:
+            try:
+                client_socket.close()
+            except NameError:
+                pass
+
