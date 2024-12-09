@@ -3,6 +3,11 @@ A voice to voice artificial conversation system.
 
 ---
 
+## Authors
+  - n.kurkulskiu@innopolis.university https://t.me/dadagust
+  - a.rakhmetov@innopolis.university https://t.me/R2R_6
+---
+
 ## Key Components and Workflow
 
 ### 1. **Server side**
