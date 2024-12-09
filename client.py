@@ -3,8 +3,9 @@ import time
 import pygame
 import pyaudio
 import json
-from vosk import Model, KaldiRecognizer
 import socket
+import threading
+from vosk import Model, KaldiRecognizer
 
 """Client file"""
 
@@ -34,17 +35,47 @@ stream = p.open(
     input_device_index=1
 )
 stream.start_stream()
-rec = KaldiRecognizer(
-    model,
-    RATE
-)
-is_waiting_for_response = False
+rec = KaldiRecognizer(model, RATE)
+is_waiting_for_response = False  # Flag for managing response state
+
+# Function to handle sudden responses from the server
+def listen_for_responses(client_socket):
+    while True:
+        try:
+            global is_waiting_for_response
+            is_waiting_for_response = False
+            response = client_socket.recv(40000000)
+            if not response:
+                print("Server closed connection.")
+                break
+
+            # Save and play the sudden response
+            with open("response.wav", "wb") as file:
+                file.write(response)
+
+            print("Received sudden response, playing audio...")
+            pygame.mixer.music.load("response.wav")
+            pygame.mixer.music.play()
+
+            while pygame.mixer.music.get_busy():
+                time.sleep(0.1)
+
+            pygame.mixer.music.unload()
+            os.remove("response.wav")
+            print("You can speak now")
+        except Exception as e:
+            print(f"Error in sudden response listener: {e}")
+            break
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
 
+# Start the thread for listening to sudden responses
+response_thread = threading.Thread(target=listen_for_responses, args=(client_socket,), daemon=True)
+response_thread.start()
+
 """
-When system tells "You can speak now" press any button and start speaking.
+When the system tells "You can speak now," press any button and start speaking.
 """
 try:
     print("You can speak now")
@@ -52,27 +83,17 @@ try:
 
     while True:
         if is_waiting_for_response:
-            response = client_socket.recv(40000000)
-            if not response:
-                print("No response from server. Closing connection.")
-                break
-
-            with open(f"response.wav", "wb") as file:
-                file.write(response)
-            print("writed audio")
-
-            pygame.mixer.music.load(f"response.wav")
-            pygame.mixer.music.play()
-
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
-
-            pygame.mixer.music.unload()
-            os.remove(f"response.wav")
+            # Handle server response after user input
             is_waiting_for_response = False
-            print("You can speak now")
-            input()
+            print(f"is waiting response: {is_waiting_for_response}")
+            input("")
+            client_socket.send(b"DISCARD_SUDDEN_RESPONSE")
         else:
+            # Notify the server to discard sudden responses
+
+            #print("Notified server to discard sudden responses.")
+
+            # Process voice input
             data = stream.read(CHUNK)
             if len(data) == 0:
                 break
@@ -80,6 +101,8 @@ try:
             if rec.AcceptWaveform(data):
                 result = rec.Result()
                 text = json.loads(result)["text"]
+
+                # Send text to server
                 client_socket.send(text.encode('utf-8'))
                 print(f"Resolved text: {text}")
                 is_waiting_for_response = True
@@ -87,7 +110,7 @@ try:
             data = None
 
 except KeyboardInterrupt:
-    print("Stopped resolving")
+    print("Stopped resolving.")
 
 finally:
     client_socket.close()
