@@ -1,6 +1,10 @@
 # Inno-sama
 A voice to voice artificial conversation system.
 
+
+She can sing!
+Neural Voice Model checkpoint with example: [link](https://disk.yandex.ru/d/yARWX7-NGsn_gA)
+Inference using RVC, for example [link](https://huggingface.co/spaces/r3gm/rvc_zero)
 ---
 
 ## Authors
