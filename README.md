@@ -1,13 +1,18 @@
 # Inno-sama
-A voice to voice artificial conversation system.
+
+A voice to voice artificial conversation system. 
 
 
 She can sing!
-Neural Voice Model checkpoint with example: [link](https://disk.yandex.ru/d/yARWX7-NGsn_gA)
+
+Neural Voice Model checkpoint with example [link](https://disk.yandex.ru/d/yARWX7-NGsn_gA)
+
 Inference using RVC, for example [link](https://huggingface.co/spaces/r3gm/rvc_zero)
+
 ---
 
 ## Authors
+
   - n.kurkulskiu@innopolis.university https://t.me/dadagust
   - a.rakhmetov@innopolis.university https://t.me/R2R_6
 ---
@@ -29,3 +34,5 @@ Inference using RVC, for example [link](https://huggingface.co/spaces/r3gm/rvc_z
   - *ollama serve* to create an ollama server for the model.
   - *ollama create innosama -f ModelFile* to create an instance of an LLM model
   - The rest of the work is done by the server code
+
+
