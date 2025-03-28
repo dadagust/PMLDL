@@ -36,3 +36,5 @@ Inference using RVC, for example [link](https://huggingface.co/spaces/r3gm/rvc_z
   - The rest of the work is done by the server code
 
 
+![unnamed](https://github.com/user-attachments/assets/425a5dcd-bf2d-43ef-8cee-76528795c2cd)
+![unnamed (1)](https://github.com/user-attachments/assets/629a3cc7-804e-4fe6-a340-2af549be4057)
